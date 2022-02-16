@@ -1,0 +1,71 @@
+def randomforest_function(dataframe):
+    import pandas as pd
+    import numpy as np
+    import pyodbc
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.model_selection import train_test_split 
+    conn = pyodbc.connect('Driver={SQL Server};'
+                      'Server=DESKTOP-J13R6DU\\SQLEXPRESS;'
+                      'Database=BPK_TECH;'
+                      'Trusted_Connection=yes;')
+    df = pd.read_sql_query('SELECT * FROM dbo.Combined_Dataset2_3', conn)
+    x = df.drop(columns = ['Rejected'])
+    x = x.select_dtypes(['number'])
+    y = df['Rejected']
+    x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.3, random_state=2)
+    random_forest_model = RandomForestClassifier()
+    random_forest_model.fit(np.nan_to_num(x_train),y_train)
+    new_list = []
+    new_df = pd.read_csv(dataframe)
+    Invalid_procedurecode_df1 = pd.read_sql_query('SELECT DISTINCT(ProcNum) FROM dbo.INVALID_PROCEDURECODES',conn)
+    print(Invalid_procedurecode_df1)
+    Invalid_procedurecode_df2 = pd.read_sql_query('SELECT DISTINCT(CodeNum) FROM dbo.INVALID_PROCEDURECODES',conn)
+    print(Invalid_procedurecode_df2)
+    Invalid_tooth_procedure_procnum_df = pd.read_sql_query('SELECT DISTINCT(ProcNum) FROM dbo.CodeNumbers',conn)
+    print(Invalid_tooth_procedure_procnum_df)
+    Invalid_tooth_procedure_codenum_df = pd.read_sql_query('SELECT DISTINCT(CodeNum) FROM dbo.CodeNumbers',conn)
+    print(Invalid_tooth_procedure_codenum_df)
+    Invalid_Zip_Code_df = pd.read_sql_query('SELECT * FROM dbo.Invalid_Zip_Code_Data',conn)
+    print(Invalid_Zip_Code_df)
+    index_list = []
+    for index, row in new_df.iterrows():
+        if row["ProcNum"] in Invalid_procedurecode_df1:
+           index_list.append(index)
+           print(index + 1,"row in csv")
+           print("X=%s, Predicted=%s" % ("Rejected", "[1.00 0.00]"))
+           print("Rejected Reason: INVALID PROCEDURE CODE")
+        if row["CodeNum"] in Invalid_procedurecode_df2:
+           print(index + 1,"row in csv")
+           print("X=%s, Predicted=%s" % ("Rejected", "[1.00 0.00]"))
+           print("Rejected Reason: INVALID PROCEDURE CODE")
+           if index not in index_list:
+              index_list.append(index)
+        if row['ProcNum'] in Invalid_tooth_procedure_procnum_df:
+           print(index + 1,"row in csv")
+           print("X=%s, Predicted=%s" % ("Rejected", "[1.00 0.00]"))
+           print("Rejected Reason: PROCEDURE CODE REQUIRES A TOOTH")
+           if index not in index_list:
+              index_list.append(index)
+        if row['CodeNum'] in Invalid_tooth_procedure_codenum_df:
+           print(index + 1,"row in csv")
+           print("X=%s, Predicted=%s" % ("Rejected", "[1.00 0.00]"))
+           print("Rejected Reason: PROCEDURE CODE REQUIRES A TOOTH")
+           if index not in index_list:
+              index_list.append(index)
+        if row['Zip'] in Invalid_Zip_Code_df:
+           print(index + 1,"row in csv")
+           print("X=%s, Predicted=%s" % ("Rejected", "[1.00 0.00]"))
+           print("Rejected Reason: INSURED ZIP INVALID")
+           if index not in index_list:
+              index_list.append(index)
+    new_df = new_df.drop(index_list) 
+    for n in new_df:
+        if n.strip() not in x:
+           new_list.append(n)
+    new_df = new_df.drop(new_list, axis = 1)
+    array_df = np.asarray(np.nan_to_num(new_df))
+    prediction_prob = random_forest_model.predict_proba(np.nan_to_num(array_df))
+    prediction = random_forest_model.predict(np.nan_to_num(array_df))
+    for i in range(len(prediction)):
+	print("X=%s, Predicted=%s" % (prediction[i], prediction_prob[i]))    
+print(randomforest_function(r'C:\Users\Sankalp Chauhan\Desktop\Sonny\BPK_TECH\Dummy_Data.csv'))
